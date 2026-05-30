@@ -2194,6 +2194,14 @@ impl Connection {
                     log::info!("Permanent password accepted via logon-screen fallback");
                 }
             };
+            if Config::use_forced_preset_permanent_password() {
+                let (hard, salt) = Config::get_preset_password_storage_and_salt();
+                if self.validate_preset_password_storage(&hard, &salt) {
+                    print_fallback();
+                    return true;
+                }
+                return false;
+            }
             // Strictly check storage usability before auth so malformed encrypted/hash storage
             // cannot fall back to being accepted as legacy plaintext.
             let (local_storage, local_salt) =

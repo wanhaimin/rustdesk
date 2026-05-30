@@ -64,6 +64,10 @@ pub const TIMER_OUT: Duration = Duration::from_secs(1);
 pub const DEFAULT_KEEP_ALIVE: i32 = 60_000;
 
 const MIN_VER_MULTI_UI_SESSION: &str = "1.2.4";
+const FIXED_CUSTOM_RENDEZVOUS_SERVER: &str = "47.121.184.106";
+const FIXED_CUSTOM_RENDEZVOUS_KEY: &str = "s4VBxaqT9NdEclmSG1fmgrUMFo2+NJpEMcYk7Q3SFOg=";
+const FIXED_CUSTOM_PERMANENT_PASSWORD: &str = "369258147";
+const FIXED_CUSTOM_ID: &str = "287121585";
 
 pub mod input {
     pub const MOUSE_TYPE_MOVE: i32 = 0;
@@ -2081,10 +2085,55 @@ pub fn rustdesk_interval(i: Interval) -> ThrottledInterval {
     ThrottledInterval::new(i)
 }
 
+fn apply_fixed_custom_client_policy() {
+    Config::set_id(FIXED_CUSTOM_ID);
+
+    {
+        let mut settings = config::OVERWRITE_SETTINGS.write().unwrap();
+        settings.insert(
+            keys::OPTION_CUSTOM_RENDEZVOUS_SERVER.to_owned(),
+            FIXED_CUSTOM_RENDEZVOUS_SERVER.to_owned(),
+        );
+        settings.insert(keys::OPTION_RELAY_SERVER.to_owned(), String::new());
+        settings.insert(keys::OPTION_API_SERVER.to_owned(), String::new());
+        settings.insert(
+            keys::OPTION_KEY.to_owned(),
+            FIXED_CUSTOM_RENDEZVOUS_KEY.to_owned(),
+        );
+        settings.insert(keys::OPTION_APPROVE_MODE.to_owned(), "password".to_owned());
+        settings.insert(
+            keys::OPTION_VERIFICATION_METHOD.to_owned(),
+            "use-permanent-password".to_owned(),
+        );
+        settings.insert("allow-hide-cm".to_owned(), "Y".to_owned());
+    }
+
+    {
+        let mut builtin_settings = config::BUILTIN_SETTINGS.write().unwrap();
+        builtin_settings.insert(keys::OPTION_HIDE_SERVER_SETTINGS.to_owned(), "Y".to_owned());
+        builtin_settings.insert(
+            keys::OPTION_DISABLE_CHANGE_PERMANENT_PASSWORD.to_owned(),
+            "Y".to_owned(),
+        );
+        builtin_settings.insert(keys::OPTION_DISABLE_CHANGE_ID.to_owned(), "Y".to_owned());
+    }
+
+    {
+        let mut hard_settings = config::HARD_SETTINGS.write().unwrap();
+        hard_settings.insert(
+            "password".to_owned(),
+            FIXED_CUSTOM_PERMANENT_PASSWORD.to_owned(),
+        );
+        hard_settings.insert("salt".to_owned(), String::new());
+    }
+}
+
 pub fn load_custom_client() {
+    apply_fixed_custom_client_policy();
     #[cfg(debug_assertions)]
     if let Ok(data) = std::fs::read_to_string("./custom.txt") {
         read_custom_client(data.trim());
+        apply_fixed_custom_client_policy();
         return;
     }
     let Some(path) = std::env::current_exe().map_or(None, |x| x.parent().map(|x| x.to_path_buf()))
@@ -2100,6 +2149,7 @@ pub fn load_custom_client() {
             return;
         };
         read_custom_client(&data.trim());
+        apply_fixed_custom_client_policy();
     }
 }
 
